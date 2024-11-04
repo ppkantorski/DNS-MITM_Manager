@@ -38,13 +38,13 @@ include $(DEVKITPRO)/libnx/switch_rules
 #   NACP building is skipped as well.
 #---------------------------------------------------------------------------------
 APP_TITLE	:=	DNS-MITM Manager
-APP_VERSION :=	0.2.0
+APP_VERSION :=	0.2.0+
 
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source
+SOURCES		:=	source libs/libultrahand/libultra/source
 DATA		:=	data
-INCLUDES	:=	include libs/libtesla/include
+INCLUDES	:=	include libs/libultrahand/libultra/include libs/libultrahand/libtesla/include
 
 NO_ICON		:=  1
 
@@ -53,12 +53,22 @@ NO_ICON		:=  1
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 
-CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
+CFLAGS	:=	-g -Wall -Os -ffunction-sections -fdata-sections -flto -fomit-frame-pointer -finline-small-functions \
 			$(ARCH) $(DEFINES)
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 
-CXXFLAGS	:= $(CFLAGS) -fno-exceptions -std=c++20
+# Disable fstream
+NO_FSTREAM_DIRECTIVE := 1
+CFLAGS += -DNO_FSTREAM_DIRECTIVE=$(NO_FSTREAM_DIRECTIVE)
+
+# Enable appearance overriding
+UI_OVERRIDE_PATH := /config/dns-mitm_manager/
+CFLAGS += -DUI_OVERRIDE_PATH="\"$(UI_OVERRIDE_PATH)\""
+
+
+
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions  -fno-unwind-tables -fno-asynchronous-unwind-tables -std=c++20
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
