@@ -44,6 +44,27 @@ void FileBrowserGui::fill_item_list() {
   tsl::hlp::ScopeGuard dirGuard([&] { fsDirClose(&hostsDir); });
 
   for (const auto &entry : FsDirIterator(hostsDir)) {
+    // Only process .txt files
+    if (std::string(entry.name).find(".txt") == std::string::npos) {
+        continue;
+    }
+
+    // Open the file to check its size
+    FsFile file;
+    if (R_FAILED(fsFsOpenFile(&fsSdmc, (std::string(pathBuffer) + "/" + entry.name).c_str(), FsOpenMode_Read, &file))) {
+        GlobalObjects::LogLine("Error opening file to check size\n");
+        continue;
+    }
+    tsl::hlp::ScopeGuard fileGuard([&] { fsFileClose(&file); });
+
+    // Get the file size
+    s64 fileSize = 0;  // Change u64 to s64
+    if (R_FAILED(fsFileGetSize(&file, &fileSize)) || fileSize == 0) {
+        // Skip empty files
+        continue;
+    }
+
+
     auto *clickableListItem = new tsl::elm::ListItem(entry.name);
     std::string selected_file = entry.name;
     clickableListItem->setClickListener([selected_file](u64 keys) {
